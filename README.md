@@ -3,7 +3,21 @@ stanford-corenlp-server
 
 Run [Stanford CoreNLP](http://nlp.stanford.edu/software/corenlp.shtml) as a JSON-RPC server.
 
-## Setup
+## Using Docker
+
+### Building Image
+
+docker build -t akiomik/stanford-corenlp-server .
+
+### Running Server
+
+docker run -d -p 8081:8081 -p 9990:9990 akiomik/stanford-corenlp-server
+
+### Querying the Server
+
+curl -X POST http://localhost:8081/rpc -H "Content-type: application/json" -d '{"jsonrpc": "2.0", "method": "foo", "params": ["A martini. Shaken, not stirred."], "id": "1"}'
+
+## Setup - Local
 
 ```bash
 git clone https://github.com/akiomik/stanford-corenlp-server.git
@@ -14,7 +28,7 @@ unzip stanford-corenlp-full-2015-04-20.zip
 mv stanford-corenlp-full-2015-04-20 lib
 ```
 
-## Usage
+## Usage - Local
 
 ### Server
 
