@@ -7,15 +7,23 @@ Run [Stanford CoreNLP](http://nlp.stanford.edu/software/corenlp.shtml) as a JSON
 
 ### Building Image
 
+```bash
+git submodule init
+git submodule update
 docker build -t akiomik/stanford-corenlp-server .
+```
 
 ### Running Server
 
+```bash
 docker run -d -p 8081:8081 -p 9990:9990 akiomik/stanford-corenlp-server
+```
 
 ### Querying the Server
 
+```bash
 curl -X POST http://localhost:8081/rpc -H "Content-type: application/json" -d '{"jsonrpc": "2.0", "method": "foo", "params": ["A martini. Shaken, not stirred."], "id": "1"}'
+```
 
 ## Setup - Local
 
@@ -23,9 +31,11 @@ curl -X POST http://localhost:8081/rpc -H "Content-type: application/json" -d '{
 git clone https://github.com/akiomik/stanford-corenlp-server.git
 cd stanford-corenlp-server
 
-wget http://nlp.stanford.edu/software/stanford-corenlp-full-2015-04-20.zip
-unzip stanford-corenlp-full-2015-04-20.zip
-mv stanford-corenlp-full-2015-04-20 lib
+# build current version of Stanford CoreNLP
+git submodule init
+git submodule update
+cd lib/CoreNLP
+gradle build
 ```
 
 ## Usage - Local
