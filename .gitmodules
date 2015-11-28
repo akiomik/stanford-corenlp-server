@@ -1,0 +1,3 @@
+[submodule "lib/CoreNLP"]
+	path = lib/CoreNLP
+	url = git@github.com:stanfordnlp/CoreNLP.git
