@@ -57,3 +57,13 @@ curl -X POST http://localhost:8081/rpc -H "Content-type: application/json" -d '{
 ## Configuration
 
 Edit `src/main/resources/application.properties`.
+
+## Create a fat JAR
+
+```bash
+# build with sbt-assembly
+sbt -J-Xmx2048m assembly
+
+# execute the jar
+target/scala-2.11/stanford-corenlp-server-0.0.1-SNAPSHOT
+```
