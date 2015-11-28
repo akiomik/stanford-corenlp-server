@@ -4,18 +4,13 @@ package com.github.akiomik.stanford_corenlp_server
 import com.typesafe.config.ConfigFactory
 
 // stanford corenlp
-import edu.stanford.nlp.pipeline.{StanfordCoreNLP, JSONOutputter, Annotation}
-
-// json parser
-import io.circe._
-import io.circe.generic.auto._
-import io.circe.jawn._
-import java.io.ByteArrayOutputStream
+import edu.stanford.nlp.pipeline.{StanfordCoreNLP, Annotation}
 
 // finch
 import io.finch._
 import io.finch.request._
 import io.finch.circe._
+import io.circe.generic.auto._
 import com.twitter.finagle.Http
 import com.twitter.util.Await
 import com.twitter.util.FuturePool
@@ -31,25 +26,41 @@ object Main extends TwitterServer {
   val props    = ConfigFactory.load.toProps
   val pipeline = new StanfordCoreNLP(props)
 
-  // instance for encoding annotation 
-  implicit val encodeAnnotation: Encoder[Annotation] = Encoder.instance { a =>
-    val output = new ByteArrayOutputStream()
-    JSONOutputter.jsonPrint(a, output)
-    val json = new String(output.toByteArray, "UTF-8")
-    parse(json).getOrElse(Json.empty)
-  }
-
   val rpc = post("rpc" ? body.as[Req]) { req: Req =>
     FuturePool.unboundedPool { // wapper for expensive computations
-      val params = req.params.getOrElse(Seq())
-      params match {
-        case Seq(a) => {
+      req match {
+        case Req(v20, _, _, None) => {
+          // notification
+          NoContent(Res[Annotation](v20, None, None, None))
+        }
+        case Req(v20, _, Some(Seq(a)), id) => {
           log.debug(s"text: $a")
           val anno = pipeline.process(a)
-          Ok(Res("2.0", Some(anno), None, req.id))
+          Ok(Res(v20, Some(anno), None, id))
         }
-        case _ => Ok(Res("2.0", None, Some(InvalidParams("", None)), req.id))
+        case Req(v20, _, Some(_), id) => {
+          val error = InvalidParams("", None)
+          BadRequest(Res[Annotation](v20, None, Some(error), id))
+        }
+        case Req(v20, _, None, id) => {
+          val error = InvalidParams("", None)
+          BadRequest(Res[Annotation](v20, None, Some(error), id))
+        }
+        case _ => {
+          val error = InvalidRequest("", None)
+          BadRequest(Res[Annotation](v20, None, Some(error), None))
+        }
       }
+    }
+  } handle {
+    case _: NotParsed => {
+      val error = ParseError("", None)
+      BadRequest(Res[Annotation](v20, None, Some(error), None))
+    }
+    case e => {
+      log.error(e.toString)
+      val error = InternalError(e.toString, None)
+      InternalServerError(Res[Annotation](v20, None, Some(error), None))
     }
   }
   val api = rpc
