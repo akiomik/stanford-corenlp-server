@@ -12,8 +12,8 @@ import io.finch.request._
 import io.finch.circe._
 import io.circe.generic.auto._
 import com.twitter.finagle.Http
-import com.twitter.util.Await
-import com.twitter.util.FuturePool
+import com.twitter.util.{Await, FuturePool}
+import shapeless._
 
 // twitter server
 import com.twitter.server.TwitterServer
@@ -26,6 +26,11 @@ object Main extends TwitterServer {
   val props    = ConfigFactory.load.toProps
   val pipeline = new StanfordCoreNLP(props)
 
+  object extract extends Poly1 {
+    implicit def caseMap = at[Map[String, String]] { _.get("text") }
+    implicit def caseSeq = at[Seq[String]] { _.headOption }
+  }
+
   val rpc = post("rpc" ? body.as[Req]) { req: Req =>
     FuturePool.unboundedPool { // wapper for expensive computations
       req match {
@@ -33,14 +38,18 @@ object Main extends TwitterServer {
           // notification
           NoContent(Res[Annotation](v20, None, None, None))
         }
-        case Req(v20, _, Some(Seq(a)), id) => {
-          log.debug(s"text: $a")
-          val anno = pipeline.process(a)
-          Ok(Res(v20, Some(anno), None, id))
-        }
-        case Req(v20, _, Some(_), id) => {
-          val error = InvalidParams("", None)
-          BadRequest(Res[Annotation](v20, None, Some(error), id))
+        case Req(v20, _, Some(params), id) => {
+          params.fold(extract) match {
+            case Some(a) => {
+              log.debug(s"text: $a")
+              val anno = pipeline.process(a)
+              Ok(Res(v20, Some(anno), None, id))
+            }
+            case None => {
+              val error = InvalidParams("", None)
+              BadRequest(Res[Annotation](v20, None, Some(error), id))
+            }
+          }
         }
         case Req(v20, _, None, id) => {
           val error = InvalidParams("", None)

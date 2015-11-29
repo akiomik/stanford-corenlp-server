@@ -14,8 +14,9 @@ trait JsonRpc {
   def InvalidParams  = Error(-32602, _: String, _: Option[String])
   def InternalError  = Error(-32603, _: String, _: Option[String])
 
-  // TODO: support object params
-  case class Req(jsonrpc: String, method: String, params: Option[Seq[String]], id: Option[String])
+  // TODO: support number and boolean values
+  type Params = Seq[String] :+: Map[String, String] :+: CNil
+  case class Req(jsonrpc: String, method: String, params: Option[Params], id: Option[String])
   case class Res[A](jsonrpc: String, result: Option[A], error: Option[Error], id: Option[String])
 
   // output wrapper

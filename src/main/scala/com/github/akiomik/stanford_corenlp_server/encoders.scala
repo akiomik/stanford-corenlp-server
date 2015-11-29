@@ -5,13 +5,13 @@ import edu.stanford.nlp.pipeline.{JSONOutputter, Annotation}
 import java.io.ByteArrayOutputStream
 
 // import io.circe._
-import io.circe.{Json, Encoder => CEncoder}
+import io.circe.{Json, Encoder}
 import io.circe.jawn._
 
-trait Encoder {
+trait Encoders {
 
   // instance for encoding annotation 
-  implicit val encodeAnnotation: CEncoder[Annotation] = CEncoder.instance { a =>
+  implicit val encodeAnnotation: Encoder[Annotation] = Encoder.instance { a =>
     val output = new ByteArrayOutputStream()
     JSONOutputter.jsonPrint(a, output)
     val json = new String(output.toByteArray, "UTF-8")
