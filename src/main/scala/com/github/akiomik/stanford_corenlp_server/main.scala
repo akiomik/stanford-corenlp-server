@@ -27,8 +27,8 @@ object Main extends TwitterServer {
   val pipeline = new StanfordCoreNLP(props)
 
   object extract extends Poly1 {
-    implicit def caseMap = at[Map[String, String]] { _.get("text") }
-    implicit def caseSeq = at[Seq[String]] { _.headOption }
+    implicit def caseMap = at[Map[String, Param]] { _.get("text") }
+    implicit def caseSeq = at[Seq[Param]] { _.headOption }
   }
 
   val rpc = post("rpc" ? body.as[Req]) { req: Req =>
@@ -38,17 +38,21 @@ object Main extends TwitterServer {
           // notification
           NoContent(Res[Annotation](v20, None, None, None))
         }
-        case Req(v20, _, Some(params), id) => {
-          params.fold(extract) match {
-            case Some(a) => {
-              log.debug(s"text: $a")
-              val anno = pipeline.process(a)
+        case Req(v20, _, Some(ps), id) => ps.fold(extract) match {
+          case Some(p) => p.select[String] match {
+            case Some(s) => {
+              log.debug(s"text: $s")
+              val anno = pipeline.process(s)
               Ok(Res(v20, Some(anno), None, id))
             }
             case None => {
-              val error = InvalidParams("`params` is invalid.", None)
+              val error = InvalidParams("value of `params` must be string.", None)
               BadRequest(Res[Annotation](v20, None, Some(error), id))
             }
+          }
+          case None => {
+            val error = InvalidParams("`params` is invalid.", None)
+            BadRequest(Res[Annotation](v20, None, Some(error), id))
           }
         }
         case Req(v20, _, None, id) => {
