@@ -46,24 +46,24 @@ object Main extends TwitterServer {
               Ok(Res(v20, Some(anno), None, id))
             }
             case None => {
-              val error = InvalidParams("", None)
+              val error = InvalidParams("`params` is invalid.", None)
               BadRequest(Res[Annotation](v20, None, Some(error), id))
             }
           }
         }
         case Req(v20, _, None, id) => {
-          val error = InvalidParams("", None)
+          val error = InvalidParams("`params` is missing.", None)
           BadRequest(Res[Annotation](v20, None, Some(error), id))
         }
         case _ => {
-          val error = InvalidRequest("", None)
+          val error = InvalidRequest("request is invalid.", None)
           BadRequest(Res[Annotation](v20, None, Some(error), None))
         }
       }
     }
   } handle {
-    case _: NotParsed => {
-      val error = ParseError("", None)
+    case e: NotParsed => {
+      val error = ParseError(e.toString, None)
       BadRequest(Res[Annotation](v20, None, Some(error), None))
     }
     case e => {
