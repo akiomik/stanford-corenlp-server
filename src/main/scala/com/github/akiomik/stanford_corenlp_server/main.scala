@@ -31,50 +31,41 @@ object Main extends TwitterServer {
     implicit def caseSeq = at[Seq[Param]] { _.headOption }
   }
 
-  val rpc = post("rpc" ? body.as[Req]) { req: Req =>
+  // val rpc: Endpoint[Response[Annotation]] = post("rpc" ? body.as[Request]) { req: Request =>
+  val rpc = post("rpc" ? body.as[Request]) { req: Request =>
     FuturePool.unboundedPool { // wapper for expensive computations
       req match {
-        case Req(v20, _, _, None) => {
-          // notification
-          NoContent(Res[Annotation](v20, None, None, None))
-        }
-        case Req(v20, _, Some(ps), id) => ps.fold(extract) match {
-          case Some(p) => p.select[String] match {
-            case Some(s) => {
-              log.debug(s"text: $s")
-              val anno = pipeline.process(s)
-              Ok(Res(v20, Some(anno), None, id))
-            }
-            case None => {
-              val error = InvalidParams("value of `params` must be string.", None)
-              BadRequest(Res[Annotation](v20, None, Some(error), id))
-            }
-          }
-          case None => {
-            val error = InvalidParams("`params` is invalid.", None)
-            BadRequest(Res[Annotation](v20, None, Some(error), id))
-          }
-        }
-        case Req(v20, _, None, id) => {
-          val error = InvalidParams("`params` is missing.", None)
-          BadRequest(Res[Annotation](v20, None, Some(error), id))
+        // case Request(v20, _, _, None) => {
+        //   NoContent(Empty)
+        // }
+        // case Request(v20, _, Some(ps), id) => ps.fold(extract) match {
+        //   case Some(p) => p.select[String] match {
+        //     case Some(s) => {
+        //       log.debug(s"text: $s")
+        //       Ok(Success(v20, pipeline.process(s), id))
+        //     }
+        //     case None => {
+        //       BadRequest(Failure(v20, InvalidParams("value of `params` must be string.", None), id))
+        //     }
+        //   }
+        //   case None => {
+        //     BadRequest(Failure(v20, InvalidParams("`params` is invalid.", None), id))
+        //   }
+        // }
+        case Request(v20, _, None, id) => {
+          BadRequest(Failure(v20, InvalidParams("`params` is missing.", None), id))
         }
         case _ => {
-          val error = InvalidRequest("request is invalid.", None)
-          BadRequest(Res[Annotation](v20, None, Some(error), None))
+          BadRequest(Failure(v20, InvalidRequest("request is invalid.", None), None))
         }
       }
     }
-  } handle {
-    case e: NotParsed => {
-      val error = ParseError(e.toString, None)
-      BadRequest(Res[Annotation](v20, None, Some(error), None))
-    }
-    case e => {
-      log.error(e.toString)
-      val error = InternalError(e.toString, None)
-      InternalServerError(Res[Annotation](v20, None, Some(error), None))
-    }
+  // } handle {
+  //   case e: NotParsed => BadRequest(Failure(v20, ParseError(e.toString, None), None))
+  //   case e => {
+  //     log.error(e.toString)
+  //     InternalServerError(Failure(v20, InternalError(e.toString, None), None))
+  //   }
   }
   val api = rpc
 

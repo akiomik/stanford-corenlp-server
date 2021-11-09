@@ -18,4 +18,8 @@ trait Encoders {
     parse(json).getOrElse(Json.empty)
   }
 
+  implicit val encodeNothing: Encoder[Any] = Encoder.instance { _ =>
+    Json.empty
+  }
+
 }
